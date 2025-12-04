@@ -1,0 +1,172 @@
+"use client"
+
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Luggage, ArrowLeft, LogOut, MoreVertical, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import type { Trip, Profile } from "@/lib/types"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useState } from "react"
+
+interface TripHeaderProps {
+  trip: Trip & { owner: Profile }
+  profile: Profile
+  isOwner: boolean
+}
+
+export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const initials = profile.username
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    toast.success("Signed out successfully")
+    router.push("/")
+    router.refresh()
+  }
+
+  async function handleDeleteTrip() {
+    setDeleting(true)
+
+    const { error } = await supabase.from("trips").delete().eq("id", trip.id)
+
+    if (error) {
+      toast.error("Failed to delete trip")
+      setDeleting(false)
+      return
+    }
+
+    toast.success("Trip deleted")
+    router.push("/dashboard")
+    router.refresh()
+  }
+
+  return (
+    <>
+      <header className="border-b-2 border-border bg-card sticky top-0 z-50">
+        <div className="px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Luggage className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-semibold text-sm sm:text-base truncate">{trip.name}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-2">
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="border-2 border-border shadow-[4px_4px_0_0_var(--border)]">
+                  <DropdownMenuItem className="text-destructive py-2.5" onClick={() => setShowDeleteDialog(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Trip
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                  <Avatar className="h-9 w-9 border-2 border-border">
+                    <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-56 border-2 border-border shadow-[4px_4px_0_0_var(--border)]"
+              >
+                <div className="flex items-center gap-3 p-3">
+                  <Avatar className="h-10 w-10 border-2 border-border">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-semibold">{profile.username}</span>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="py-2.5">
+                  <Link href="/dashboard">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive py-2.5">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="border-2 border-border shadow-[6px_6px_0_0_var(--border)] mx-4 sm:mx-0 max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Trip</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{trip.name}&quot;? This will permanently delete all tasks and remove
+              all members. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel disabled={deleting} className="border-2">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTrip}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 border-2 border-destructive/20"
+            >
+              {deleting ? "Deleting..." : "Delete Trip"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
