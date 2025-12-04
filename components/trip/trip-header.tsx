@@ -11,8 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Luggage, ArrowLeft, LogOut, MoreVertical, Trash2 } from "lucide-react"
+import { Luggage, ArrowLeft, LogOut, MoreVertical, Trash2, Settings } from "lucide-react"
 import { toast } from "sonner"
 import type { Trip, Profile } from "@/lib/types"
 import {
@@ -26,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useState } from "react"
+import { TripSettingsDialog } from "./trip-settings-dialog"
 
 interface TripHeaderProps {
   trip: Trip & { owner: Profile }
@@ -35,6 +44,7 @@ interface TripHeaderProps {
 
 export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -74,16 +84,26 @@ export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
       <header className="border-b-2 border-border bg-card sticky top-0 z-50">
         <div className="px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Luggage className="h-4 w-4 text-primary" />
-              </div>
-              <span className="font-semibold text-sm sm:text-base truncate">{trip.name}</span>
+            <div className="hidden sm:block">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink href="/dashboard">Your Trips</BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{trip.name}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+            <div className="sm:hidden flex items-center gap-2">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <span className="font-semibold text-sm truncate">{trip.name}</span>
             </div>
           </div>
 
@@ -96,6 +116,11 @@ export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="border-2 border-border shadow-[4px_4px_0_0_var(--border)]">
+                  <DropdownMenuItem onClick={() => setShowSettingsDialog(true)} className="py-2.5">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Trip Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-destructive py-2.5" onClick={() => setShowDeleteDialog(true)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Trip
@@ -143,6 +168,8 @@ export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
           </div>
         </div>
       </header>
+
+      <TripSettingsDialog trip={trip} open={showSettingsDialog} onOpenChange={setShowSettingsDialog} />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent className="border-2 border-border shadow-[6px_6px_0_0_var(--border)] mx-4 sm:mx-0 max-w-md">

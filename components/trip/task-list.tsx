@@ -6,11 +6,21 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, Loader2, CheckSquare } from "lucide-react"
+import { Plus, Loader2, CheckSquare, FolderPlus } from "lucide-react"
 import { toast } from "sonner"
-import type { Task } from "@/lib/types"
+import type { Task, Folder } from "@/lib/types"
 import { TaskItem } from "./task-item"
+import { FolderItem } from "./folder-item"
 import { AddTaskDialog } from "./add-task-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 interface TaskListProps {
   tripId: string
@@ -20,21 +30,31 @@ interface TaskListProps {
 
 export function TaskList({ tripId, userId, username }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddTask, setShowAddTask] = useState(false)
+  const [showAddFolder, setShowAddFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
+  const [creatingFolder, setCreatingFolder] = useState(false)
   const [quickTaskText, setQuickTaskText] = useState("")
   const [addingQuick, setAddingQuick] = useState(false)
   const [userPackedCount, setUserPackedCount] = useState(0)
   const supabase = createClient()
 
   useEffect(() => {
-    fetchTasks()
-    fetchUserPackedCount()
+    fetchData()
 
     const tasksChannel = supabase
       .channel(`tasks-${tripId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter: `trip_id=eq.${tripId}` }, () =>
-        fetchTasks(),
+        fetchData(),
+      )
+      .subscribe()
+
+    const foldersChannel = supabase
+      .channel(`folders-${tripId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "folders", filter: `trip_id=eq.${tripId}` }, () =>
+        fetchFolders(),
       )
       .subscribe()
 
@@ -45,9 +65,15 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
 
     return () => {
       supabase.removeChannel(tasksChannel)
+      supabase.removeChannel(foldersChannel)
       supabase.removeChannel(packersChannel)
     }
   }, [tripId, userId])
+
+  async function fetchData() {
+    await Promise.all([fetchTasks(), fetchFolders(), fetchUserPackedCount()])
+    setLoading(false)
+  }
 
   async function fetchTasks() {
     const { data } = await supabase
@@ -57,7 +83,14 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
       .order("created_at", { ascending: true })
 
     setTasks(data || [])
-    setLoading(false)
+  }
+
+  async function fetchFolders() {
+    const response = await fetch(`/api/trip/${tripId}/folders`)
+    if (response.ok) {
+      const data = await response.json()
+      setFolders(data)
+    }
   }
 
   async function fetchUserPackedCount() {
@@ -104,8 +137,35 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
     setAddingQuick(false)
   }
 
+  async function handleCreateFolder() {
+    if (!newFolderName.trim()) return
+
+    setCreatingFolder(true)
+    try {
+      const response = await fetch(`/api/trip/${tripId}/folders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      })
+
+      if (!response.ok) throw new Error("Failed to create folder")
+
+      toast.success("Folder created")
+      setNewFolderName("")
+      setShowAddFolder(false)
+      fetchFolders()
+    } catch (error) {
+      toast.error("Failed to create folder")
+    } finally {
+      setCreatingFolder(false)
+    }
+  }
+
   const totalCount = tasks.length
   const progressPercent = totalCount > 0 ? (userPackedCount / totalCount) * 100 : 0
+
+  const tasksInFolders = tasks.filter((t) => t.folder_id)
+  const tasksWithoutFolder = tasks.filter((t) => !t.folder_id)
 
   if (loading) {
     return (
@@ -125,13 +185,23 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
             {totalCount === 0 ? "No items yet" : `You packed ${userPackedCount} of ${totalCount} items`}
           </p>
         </div>
-        <Button
-          onClick={() => setShowAddTask(true)}
-          className="w-full sm:w-auto h-11 font-semibold border-2 border-primary/20 shadow-[3px_3px_0_0_var(--primary)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] transition-all"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Item
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => setShowAddFolder(true)}
+            className="flex-1 sm:flex-none h-11 border-2"
+          >
+            <FolderPlus className="mr-2 h-4 w-4" />
+            New Folder
+          </Button>
+          <Button
+            onClick={() => setShowAddTask(true)}
+            className="flex-1 sm:flex-none h-11 font-semibold border-2 border-primary/20 shadow-[3px_3px_0_0_var(--primary)] active:shadow-none active:translate-x-[3px] active:translate-y-[3px] transition-all"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Item
+          </Button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -163,8 +233,25 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
         </Button>
       </form>
 
-      {/* Task list */}
-      {tasks.length === 0 ? (
+      {/* Folders List */}
+      <div className="space-y-2">
+        {folders.map((folder) => (
+          <FolderItem
+            key={folder.id}
+            folder={folder}
+            tasks={tasks.filter((t) => t.folder_id === folder.id)}
+            userId={userId}
+            username={username}
+            onTaskUpdate={() => {
+              fetchTasks()
+              fetchUserPackedCount()
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Task list (Unfoldered) */}
+      {tasks.length === 0 && folders.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border p-8 sm:p-12 text-center">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
             <CheckSquare className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" />
@@ -183,7 +270,7 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
         </div>
       ) : (
         <div className="space-y-2 sm:space-y-3">
-          {tasks.map((task) => (
+          {tasksWithoutFolder.map((task) => (
             <TaskItem
               key={task.id}
               task={task}
@@ -209,6 +296,34 @@ export function TaskList({ tripId, userId, username }: TaskListProps) {
           fetchUserPackedCount()
         }}
       />
+
+      <Dialog open={showAddFolder} onOpenChange={setShowAddFolder}>
+        <DialogContent className="border-2 border-border shadow-[6px_6px_0_0_var(--border)]">
+          <DialogHeader>
+            <DialogTitle>Create New Folder</DialogTitle>
+            <DialogDescription>Organize your packing list with folders.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              <Label htmlFor="folder-name">Folder Name</Label>
+              <Input
+                id="folder-name"
+                placeholder="e.g. Toiletries, Electronics"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddFolder(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFolder} disabled={creatingFolder || !newFolderName.trim()}>
+              {creatingFolder ? "Creating..." : "Create Folder"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

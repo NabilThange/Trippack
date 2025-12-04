@@ -67,3 +67,21 @@ ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
 ALTER TABLE trips DISABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_members DISABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks DISABLE ROW LEVEL SECURITY;
+
+-- 5. Add auto_approve_members to trips
+ALTER TABLE trips ADD COLUMN IF NOT EXISTS auto_approve_members BOOLEAN DEFAULT FALSE;
+
+-- 6. Folders table - stores folders for tasks
+CREATE TABLE IF NOT EXISTS folders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. Add folder_id to tasks
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS folder_id UUID REFERENCES folders(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_folders_trip ON folders(trip_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_folder ON tasks(folder_id);

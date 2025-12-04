@@ -25,21 +25,39 @@ export function JoinTripClient({ trip, userId, existingStatus }: JoinTripClientP
   async function handleJoinRequest() {
     setLoading(true)
 
-    const { error } = await supabase.from("trip_members").insert({
-      trip_id: trip.id,
-      user_id: userId,
-      status: "pending",
-    })
+    try {
+      const response = await fetch("/api/trip/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tripId: trip.id }),
+      })
 
-    if (error) {
-      toast.error("Failed to send join request")
+      if (!response.ok) {
+        if (response.status === 409) {
+          toast.error("You have already requested to join this trip")
+        } else {
+          toast.error("Failed to send join request")
+        }
+        setLoading(false)
+        return
+      }
+
+      const data = await response.json()
+
+      if (data.status === "approved") {
+        toast.success("You have successfully joined the trip!")
+        router.push(`/trip/${trip.id}`)
+      } else {
+        toast.success("Join request sent! Waiting for owner approval.")
+        setStatus("pending")
+      }
+    } catch (error) {
+      toast.error("An error occurred")
+    } finally {
       setLoading(false)
-      return
     }
-
-    toast.success("Join request sent! Waiting for owner approval.")
-    setStatus("pending")
-    setLoading(false)
   }
 
   return (

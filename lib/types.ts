@@ -18,6 +18,7 @@ export interface Trip {
   created_at: string
   updated_at: string
   owner?: Profile
+  auto_approve_members?: boolean
 }
 
 export interface TripMember {
@@ -29,9 +30,18 @@ export interface TripMember {
   user?: Profile
 }
 
+export interface Folder {
+  id: string
+  trip_id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Task {
   id: string
   trip_id: string
+  folder_id?: string | null
   text: string
   description: string | null
   deadline: string | null

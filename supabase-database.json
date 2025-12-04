@@ -1,0 +1,52 @@
+[
+    {
+        "table_name": "profiles",
+        "total_columns": 15,
+        "primary_keys": "id, id, id",
+        "foreign_keys": null,
+        "row_count": 7,
+        "size": "32 kB",
+        "has_rls": "YES (3)",
+        "columns": "id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), username (text, NOT NULL), username (text, NOT NULL), username (text, NOT NULL), created_at (timestamp with time zone), created_at (timestamp with time zone), created_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), password_hash (text), password_hash (text), password_hash (text)"
+    },
+    {
+        "table_name": "task_packers",
+        "total_columns": 15,
+        "primary_keys": "id, id, id",
+        "foreign_keys": "task_id → tasks, user_id → profiles",
+        "row_count": 7,
+        "size": "80 kB",
+        "has_rls": "YES (3)",
+        "columns": "id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), task_id (uuid, NOT NULL), task_id (uuid, NOT NULL), task_id (uuid, NOT NULL), user_id (uuid, NOT NULL), user_id (uuid, NOT NULL), user_id (uuid, NOT NULL), user_name (text, NOT NULL), user_name (text, NOT NULL), user_name (text, NOT NULL), packed_at (timestamp with time zone), packed_at (timestamp with time zone), packed_at (timestamp with time zone)"
+    },
+    {
+        "table_name": "tasks",
+        "total_columns": 48,
+        "primary_keys": "id, id, id, id",
+        "foreign_keys": "creator_id → profiles, packed_by_id → profiles, trip_id → trips",
+        "row_count": 7,
+        "size": "64 kB",
+        "has_rls": "YES (4)",
+        "columns": "id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), trip_id (uuid, NOT NULL), trip_id (uuid, NOT NULL), trip_id (uuid, NOT NULL), trip_id (uuid, NOT NULL), text (text, NOT NULL), text (text, NOT NULL), text (text, NOT NULL), text (text, NOT NULL), description (text), description (text), description (text), description (text), deadline (date), deadline (date), deadline (date), deadline (date), packed (boolean), packed (boolean), packed (boolean), packed (boolean), packed_by_id (uuid), packed_by_id (uuid), packed_by_id (uuid), packed_by_id (uuid), packed_by_name (text), packed_by_name (text), packed_by_name (text), packed_by_name (text), creator_id (uuid, NOT NULL), creator_id (uuid, NOT NULL), creator_id (uuid, NOT NULL), creator_id (uuid, NOT NULL), creator_name (text, NOT NULL), creator_name (text, NOT NULL), creator_name (text, NOT NULL), creator_name (text, NOT NULL), created_at (timestamp with time zone), created_at (timestamp with time zone), created_at (timestamp with time zone), created_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone)"
+    },
+    {
+        "table_name": "trip_members",
+        "total_columns": 20,
+        "primary_keys": "id, id, id, id",
+        "foreign_keys": "trip_id → trips, user_id → profiles",
+        "row_count": 6,
+        "size": "80 kB",
+        "has_rls": "YES (4)",
+        "columns": "id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), trip_id (uuid, NOT NULL), trip_id (uuid, NOT NULL), trip_id (uuid, NOT NULL), trip_id (uuid, NOT NULL), user_id (uuid, NOT NULL), user_id (uuid, NOT NULL), user_id (uuid, NOT NULL), user_id (uuid, NOT NULL), status (text, NOT NULL), status (text, NOT NULL), status (text, NOT NULL), status (text, NOT NULL), joined_at (timestamp with time zone), joined_at (timestamp with time zone), joined_at (timestamp with time zone), joined_at (timestamp with time zone)"
+    },
+    {
+        "table_name": "trips",
+        "total_columns": 44,
+        "primary_keys": "id, id, id, id",
+        "foreign_keys": "owner_id → profiles",
+        "row_count": 2,
+        "size": "80 kB",
+        "has_rls": "YES (4)",
+        "columns": "id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), id (uuid, NOT NULL), name (text, NOT NULL), name (text, NOT NULL), name (text, NOT NULL), name (text, NOT NULL), description (text), description (text), description (text), description (text), owner_id (uuid, NOT NULL), owner_id (uuid, NOT NULL), owner_id (uuid, NOT NULL), owner_id (uuid, NOT NULL), invite_code (text), invite_code (text), invite_code (text), invite_code (text), created_at (timestamp with time zone), created_at (timestamp with time zone), created_at (timestamp with time zone), created_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), updated_at (timestamp with time zone), is_public (boolean), is_public (boolean), is_public (boolean), is_public (boolean), destination (text), destination (text), destination (text), destination (text), start_date (date), start_date (date), start_date (date), start_date (date), end_date (date), end_date (date), end_date (date), end_date (date)"
+    }
+]
