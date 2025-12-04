@@ -162,7 +162,7 @@ export function TaskItem({ task, userId, username, onUpdate }: TaskItemProps) {
               <span>by {task.creator_name}</span>
 
               {packers.length > 0 && (
-                <span className="flex items-center gap-1 text-accent font-medium">
+                <span className="flex items-center gap-1 text-primary font-medium">
                   <Users className="h-3 w-3" />
                   {getPackersText()}
                 </span>
