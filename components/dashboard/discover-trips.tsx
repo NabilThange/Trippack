@@ -38,6 +38,7 @@ export function DiscoverTrips({ userId }: DiscoverTripsProps) {
         *,
         owner:profiles!trips_owner_id_fkey(*)
       `)
+      .eq("is_public", true)
       .order("created_at", { ascending: false })
 
     if (!allTrips) {
@@ -48,7 +49,7 @@ export function DiscoverTrips({ userId }: DiscoverTripsProps) {
     // Get user's memberships
     const { data: memberships } = await supabase.from("trip_members").select("trip_id, status").eq("user_id", userId)
 
-    const membershipMap = new Map(memberships?.map((m) => [m.trip_id, m.status]) || [])
+    const membershipMap = new Map(memberships?.map((m: any) => [m.trip_id, m.status]) || [])
 
     const publicTrips: PublicTrip[] = []
 

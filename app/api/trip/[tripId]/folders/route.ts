@@ -98,7 +98,8 @@ export async function POST(
             .single()
 
         if (error) {
-            return new NextResponse("Failed to create folder", { status: 500 })
+            console.error("Supabase insert error:", error)
+            return new NextResponse(`Failed to create folder: ${error.message}`, { status: 500 })
         }
 
         return NextResponse.json(folder)

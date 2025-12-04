@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
-export async function PUT(request: Request, { params }: { params: { tripId: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ tripId: string }> }) {
     const supabase = await createClient()
-    const { tripId } = params
+    const { tripId } = await params
     const json = await request.json()
     const { name, description, is_public, auto_approve_members } = json
 
@@ -44,9 +44,9 @@ export async function PUT(request: Request, { params }: { params: { tripId: stri
     return NextResponse.json({ success: true })
 }
 
-export async function DELETE(request: Request, { params }: { params: { tripId: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ tripId: string }> }) {
     const supabase = await createClient()
-    const { tripId } = params
+    const { tripId } = await params
 
     const {
         data: { user },
