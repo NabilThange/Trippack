@@ -1,20 +1,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/server"
+import { getSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Instagram, Facebook, Linkedin, Twitter, ArrowUpRight, Luggage } from "lucide-react"
 
 export default async function HomePage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const session = await getSession()
 
-  if (user) {
-    const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single()
-    if (!profile) {
-      redirect("/onboarding")
-    }
+  if (session) {
     redirect("/dashboard")
   }
 

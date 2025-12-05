@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { clearClientSession } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,7 +47,6 @@ export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const initials = profile.username
     .split(" ")
@@ -57,7 +56,8 @@ export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
     .slice(0, 2)
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
+    await fetch("/api/auth/logout", { method: "POST" })
+    clearClientSession()
     toast.success("Signed out successfully")
     router.push("/")
     router.refresh()
@@ -66,17 +66,22 @@ export function TripHeader({ trip, profile, isOwner }: TripHeaderProps) {
   async function handleDeleteTrip() {
     setDeleting(true)
 
-    const { error } = await supabase.from("trips").delete().eq("id", trip.id)
+    try {
+      const response = await fetch(`/api/trip/${trip.id}`, { method: "DELETE" })
 
-    if (error) {
+      if (!response.ok) {
+        toast.error("Failed to delete trip")
+        setDeleting(false)
+        return
+      }
+
+      toast.success("Trip deleted")
+      router.push("/dashboard")
+      router.refresh()
+    } catch {
       toast.error("Failed to delete trip")
       setDeleting(false)
-      return
     }
-
-    toast.success("Trip deleted")
-    router.push("/dashboard")
-    router.refresh()
   }
 
   return (
